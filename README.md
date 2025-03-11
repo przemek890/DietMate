@@ -1,27 +1,15 @@
 # DietMate
 DietMate – Your Smart Diet Companion.  Plan meals, track calories, and balance nutrients effortlessly. Achieve your health goals with AI-powered recommendations. Eat smart, live better! 🍏
 
-## Deployment (Not working yet !!!)
+---
 
-To deploy the application locally, you have two options:
-1. Using VSCode extension (recommended for development)
-2. Using Docker Compose
+### Deployment
 
-### 1. VSCode Extension Method
+#### 1. VSCode Extension Method
 
 1. Install "Restore Terminals" extension in VSCode
 2. Restart VSCode
-3. The extension will automatically open terminals for:
-    - Backend:
-      ```bash
-      cd backend
-      python3 -m venv venv && source venv/bin/activate
-      poetry install && python3.12 main.py
-      ```
-    - Frontend:
-      ```bash
-      cd frontend && npm start
-      ```
+3. The extension will automatically run application.
 
 **Access Points:**
 - Local: `http://localhost:3000`
@@ -32,12 +20,15 @@ To deploy the application locally, you have two options:
 - Changes are immediately visible, which accelerates the development and testing process.
 - Ideal for developers working on the frontend who need quick feedback
 
-### 2. Docker Compose Method
+#### 2. Docker Compose Method
 
 Run all services with:
 ```bash
 docker-compose up --build
 ```
+
+You can choose between local or cloud database source:
+[4-5 docker-compose.yml](./docker-compose.yml#L4-L5)
 
 **Access Points:**
 - Local: `http://localhost:3000`

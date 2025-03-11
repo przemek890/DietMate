@@ -1,8 +1,19 @@
 from flask import Flask, jsonify, request
 from flask_cors import CORS
+from pymongo import MongoClient
+import os
 
 app = Flask(__name__)
 CORS(app)
+
+DATABASE = os.getenv('DATABASE', 'CLOUD')
+MONGO_CONNECTION_STRING = (
+    'mongodb+srv://admin:admin@dietmate.gzxwa.mongodb.net/'
+    if DATABASE == 'CLOUD'
+    else 'mongodb://admin:admin@localhost:27017/?authSource=admin'
+)
+client = MongoClient(MONGO_CONNECTION_STRING)
+db = client.dietmate  # database name
 
 DIETS = [
     {"id": 1, "name": "Keto", "description": "Ketogenic diet", "price": 150},

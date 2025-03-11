@@ -1,5 +1,4 @@
 #!/bin/sh
-set -eu
 
 has_ssl=true
 CERT_FILE="./SSL/fullchain.pem"
@@ -25,7 +24,7 @@ sleep 1
 
 if [ "$has_ssl" = true ]; then
     echo "Starting Gunicorn with SSL..."
-    exec /app/.venv/bin/python3 -m gunicorn --certfile="$CERT_FILE" --keyfile="$KEY_FILE" --config gunicorn_conf.py main:app
+    exec /app/.venv/bin/python3 -m gunicorn --certfile="$CERT_FILE" --keyfile="$KEY_FILE" --config gunicorn_conf.py app:app
 else
     echo "No SSL certificates found, starting without SSL..."
     exec /app/.venv/bin/python3 local.py

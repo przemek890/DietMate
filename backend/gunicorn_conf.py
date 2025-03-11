@@ -8,4 +8,4 @@ errorlog = "-"
 loglevel = "info"
 capture_output = True
 
-wsgi_app = "main:app"
+wsgi_app = "app:app"
