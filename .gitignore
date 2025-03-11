@@ -1,12 +1,12 @@
 .DS_Store
-.env/
+.env
+env
+**/venv/
+**/.venv/
+**/__pycache__/
 .idea/
 .ipynb_checkpoints/
-__pycache__/
-env/
-.env/
 node_modules/
-venv/
 *.log
 *.temp
 *.tmp
