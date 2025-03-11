@@ -1,0 +1,46 @@
+x-REACT_APP_DOMAIN: &REACT_APP_DOMAIN
+  REACT_APP_DOMAIN: http://localhost #TODO: Change this to the domain of the frontend
+
+### Uncomment and define below to use external MongoDB
+### If this variable is defined, local MongoDB container won't be created
+# x-MONGO_CONNECTION_STRING: &MONGO_CONNECTION_STRING
+#   MONGO_CONNECTION_STRING: mongodb+srv://admin:admin@dietmate.gzxwa.mongodb.net/
+
+######################################################################################
+
+version: '3'
+services:
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      <<: *REACT_APP_DOMAIN
+    depends_on:
+      - backend
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "5000:5000"
+    environment:
+      <<: *REACT_APP_DOMAIN
+      MONGO_CONNECTION_STRING: ${MONGO_CONNECTION_STRING:-mongodb://admin:admin@mongodb:27017/}
+    depends_on:
+      - ${MONGODB_SERVICE:-mongodb}
+
+  mongodb:
+    profiles:
+      - ${MONGODB_SERVICE:-default}
+    image: mongo:latest
+    container_name: mongodb
+    ports:
+      - "27017:27017"
+    environment:
+        MONGO_INITDB_ROOT_USERNAME: admin
+        MONGO_INITDB_ROOT_PASSWORD: admin
+    restart: unless-stopped
