@@ -13,6 +13,12 @@ flask = "*"
 flask-cors = "*"
 python-dotenv = "*"
 gunicorn = "*"
+requests = "*"
+groq = "*"
+immutables = "*"
+deep-translator = "*"
+langdetect = "*"
+PyJWT = "*"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

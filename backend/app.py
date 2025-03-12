@@ -1,19 +1,97 @@
-from flask import Flask, jsonify, request
+from src.GPT.tools import stream_response, generate_jwt, require_valid_token
+from flask import Flask, request, jsonify, Response
 from flask_cors import CORS
-from pymongo import MongoClient
+from typing import Dict, Any, Union
+from pymongo import MongoClient, collection
 import os
-
+import groq
+import uuid
+import datetime
+############################################################################################################
+# Flask app initialization and CORS setup
 app = Flask(__name__)
-CORS(app)
+cors_origins = os.getenv("REACT_APP_DOMAIN", "http://localhost")
+if cors_origins.startswith('https'):
+    CORS(app, origins=[cors_origins], supports_credentials=True)
+else:
+    CORS(app, supports_credentials=True)
 
-DATABASE = os.getenv('DATABASE', 'CLOUD')
-MONGO_CONNECTION_STRING = (
-    'mongodb+srv://admin:admin@dietmate.gzxwa.mongodb.net/'
-    if DATABASE == 'CLOUD'
-    else 'mongodb://admin:admin@localhost:27017/?authSource=admin'
-)
-client = MongoClient(MONGO_CONNECTION_STRING)
-db = client.dietmate  # database name
+# MongoDB connection configuration
+client = MongoClient(os.getenv('MONGO_CONNECTION_STRING'))
+db = client.dietmate
+collection1: collection.Collection = db['GPT']
+
+############################################################################################################
+
+@app.route('/api/session', methods=['GET'])
+def manage_session():
+    """
+    Create a new session and generate JWT token.
+
+    This endpoint creates a new session with a unique UUID and generates a corresponding JWT token.
+
+    Returns:
+        tuple: A tuple containing:
+            - dict: JSON response with:
+                - message (str): Success message
+                - token (str): Generated JWT token
+            - int: HTTP 200 status code
+    """
+    new_session_id = str(uuid.uuid4())
+    token = generate_jwt(new_session_id)
+    return jsonify({
+        "message": "New session created",
+        "token": token
+    }), 200
+
+@app.route('/api/askGPT', methods=['POST'])
+@require_valid_token
+def ask_gpt_endpoint(session_id: str) -> Response:
+    """
+    Protected endpoint to interact with GPT-like models for streaming responses.
+    Session verification is handled by the require_valid_token decorator.
+
+    Args:
+        session_id: Automatically injected by the decorator after token verification
+    """
+    try:
+        data: Dict[str, Any] = request.json or {}
+        message: str = data.get('message', '')
+        file_name: str = data.get('fileName', '')
+        file_content: str = data.get('fileContent', '')
+
+        response_content = []
+        client: groq.Groq = groq.Groq()
+
+        def generate_stream():
+            for chunk in stream_response(message, file_name, file_content, client, session_id, collection1):
+                response_content.append(chunk)
+                yield chunk
+
+        response = Response(generate_stream(), content_type='text/event-stream')
+
+        @response.call_on_close
+        def save_to_database():
+            bot_message = ''.join(response_content)
+            try:
+                document = {
+                    "session_id": session_id,
+                    "user_message": message,
+                    "bot_message": bot_message,
+                    "file_name": file_name,
+                    "file_content": file_content,
+                    "date_added": datetime.datetime.now()
+                }
+                collection1.insert_one(document)
+
+            except Exception as db_error:
+                print(f"Error saving interaction to the database: {db_error}")
+
+        return response
+
+    except Exception as e:
+        return Response(f"***ERROR***: {e}", status=500)
+
 
 DIETS = [
     {"id": 1, "name": "Keto", "description": "Ketogenic diet", "price": 150},

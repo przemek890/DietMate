@@ -20,7 +20,7 @@ else
     has_ssl=false
 fi
 
-echo "Gateway application domain: $NEXT_PUBLIC_DOMAIN"
+echo "Gateway application domain: $REACT_APP_DOMAIN"
 
 sleep 1
 

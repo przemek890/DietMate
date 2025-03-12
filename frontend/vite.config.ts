@@ -28,4 +28,7 @@ export default defineConfig({
     },
     tsconfigPaths(),
   ],
+  define: {
+    'window.VITE_REACT_APP_DOMAIN': JSON.stringify(process.env.REACT_APP_DOMAIN || 'http://localhost')
+  },
 });

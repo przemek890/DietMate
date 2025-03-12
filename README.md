@@ -28,7 +28,7 @@ docker-compose up --build
 ```
 
 You can choose between local or cloud database source:
-[4-5 docker-compose.yml](./docker-compose.yml#L4-L5)
+[5-6 docker-compose.yml](./docker-compose.yml#L5-L6)
 
 **Access Points:**
 - Local: `http://localhost:3000`
