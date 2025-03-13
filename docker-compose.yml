@@ -1,12 +1,11 @@
 x-REACT_APP_DOMAIN: &REACT_APP_DOMAIN
-  REACT_APP_DOMAIN: ${REACT_APP_DOMAIN} # Set in host shell environment: http://localhost 
+  REACT_APP_DOMAIN: ${REACT_APP_DOMAIN}
 
 x-MONGO_CONNECTION_STRING: &MONGO_CONNECTION_STRING
-  MONGO_CONNECTION_STRING: ${MONGO_CONNECTION_STRING}               # CLOUD
-  # MONGO_CONNECTION_STRING: mongodb://admin:admin@mongodb:27017/   # LOCAL  
+  MONGO_CONNECTION_STRING: ${MONGO_CONNECTION_STRING}
 
 x-GROQ_API_KEY: &GROQ_API_KEY
-  GROQ_API_KEY: ${GROQ_API_KEY} # Pulled from host shell environment
+  GROQ_API_KEY: ${GROQ_API_KEY} 
 
 ######################################################################################
 
