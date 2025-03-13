@@ -1,0 +1,16 @@
+{
+    "english": "english",
+    "polish": "polish",
+    "English": "English",
+    "Polish": "Polish",
+    "gpt_disclaimer": "Diet GPT may make mistakes.",
+    "type_message": "Type your message here...",
+    "welcome_message": "👋 Welcome to Diet GPT! How can I help you today?",
+    "code_copied_to_clipboard": "Code copied to clipboard!",
+    "failed_to_fetch_data": "Failed to fetch data.",
+    "upload_valid_file": "Please upload a valid file (CSV, HTML, XML, XLSX, XLS, JSON, or TXT)",
+    "uploaded_file": "Uploaded file",
+    "errorMessage": "An error occurred while processing your request. Please try again.",
+    "rate_limit_exceeded": "Rate limit exceeded. Please try again in {{retry_after}}",
+    "invalid_or_expired_token": "Invalid or expired token."
+}

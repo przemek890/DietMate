@@ -1,0 +1,17 @@
+{
+    "english": "angielski",
+    "polish": "polski",
+    "English": "Angielski",
+    "Polish": "Polski",
+    "gpt_disclaimer": "Diet GPT może popełniać błędy.",
+    "type_message": "Wpisz swoją wiadomość tutaj...",
+    "welcome_message": "👋 Witaj w Diet GPT! Jak mogę Ci dzisiaj pomóc?",
+    "code_copied_to_clipboard": "Kod skopiowany do schowka!",
+    "failed_to_fetch_data": "Nie udało się pobrać danych.",
+    "upload_valid_file": "Proszę przesłać prawidłowy plik (CSV, HTML, XML, XLSX, XLS, JSON lub TXT)",
+    "uploaded_file": "Przesłany plik",
+    "errorMessage": "Wystąpił błąd podczas przetwarzania Twojego żądania. Spróbuj ponownie.",
+    "rate_limit_exceeded": "Przekroczono limit zapytań. Spróbuj ponownie za {{retry_after}}",
+    "invalid_or_expired_token": "Nieprawidłowy lub wygasły token."
+}
+  

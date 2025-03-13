@@ -1,0 +1,1 @@
+window.REACT_APP_DOMAIN='http://192.168.100.151';

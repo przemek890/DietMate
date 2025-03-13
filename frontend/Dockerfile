@@ -1,25 +1,29 @@
 # Stage 1: Build Stage
-FROM node:22-alpine AS builder
+FROM node:23-alpine AS builder
 
-WORKDIR /app
+WORKDIR /builder
+
+COPY package*.json tsconfig.json ./
+
+RUN npm install
 
 COPY . .
 
-RUN npm install
 RUN npm run build
 
+RUN chmod +x runtime-env.sh
 RUN chmod +x entrypoint.sh
 
 # Stage 2: Production Stage
-FROM node:22-alpine AS runner
+FROM node:23-alpine AS app
 
 WORKDIR /app
 
-COPY --from=builder /app/build ./build
-COPY --from=builder /app/entrypoint.sh ./entrypoint.sh
-COPY --from=builder /app/package.json ./package.json
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/vite.config.ts ./vite.config.ts
+RUN npm install -g serve
+
+COPY --from=builder /builder/build ./build
+COPY --from=builder /builder/runtime-env.sh ./
+COPY --from=builder /builder/entrypoint.sh ./
 
 RUN mkdir ./SSL
 

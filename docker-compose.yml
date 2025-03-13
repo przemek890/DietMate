@@ -1,9 +1,9 @@
 x-REACT_APP_DOMAIN: &REACT_APP_DOMAIN
-  REACT_APP_DOMAIN: http://localhost #TODO: Change this to the domain of the frontend
+  REACT_APP_DOMAIN: ${REACT_APP_DOMAIN} # Set in host shell environment: http://localhost 
 
 x-MONGO_CONNECTION_STRING: &MONGO_CONNECTION_STRING
-  # MONGO_CONNECTION_STRING: ${MONGO_CONNECTION_STRING}               # CLOUD
-  MONGO_CONNECTION_STRING: mongodb://admin:admin@mongodb:27017/       # LOCAL  
+  MONGO_CONNECTION_STRING: ${MONGO_CONNECTION_STRING}               # CLOUD
+  # MONGO_CONNECTION_STRING: mongodb://admin:admin@mongodb:27017/   # LOCAL  
 
 x-GROQ_API_KEY: &GROQ_API_KEY
   GROQ_API_KEY: ${GROQ_API_KEY} # Pulled from host shell environment

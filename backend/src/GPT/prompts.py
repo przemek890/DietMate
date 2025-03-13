@@ -2,7 +2,7 @@ from typing import List, Dict, Optional
 from pymongo import collection
 import datetime
 
-class MedicalPrompter:
+class DietPrompter:
     """
     A class providing utilities for generating prompts, managing rules, and processing
     messages or file content in the context of a diet AI assistant.
@@ -131,6 +131,6 @@ class MedicalPrompter:
         if file_name and file_content:
             return (
                 f"file {file_name} context:\n**{file_content}**\n"
-                + MedicalPrompter.get_rules("file_context_rules")
+                + DietPrompter.get_rules("file_context_rules")
             )
         return ""

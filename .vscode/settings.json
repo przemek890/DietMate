@@ -14,7 +14,7 @@
         },
         {
             "name": "client",
-            "commands": ["cd frontend", "npm install", "npm run dev"]
+            "commands": ["cd frontend", "npm install", "npm start"]
         }
       ]
     }

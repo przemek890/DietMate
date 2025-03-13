@@ -4,7 +4,7 @@ import groq
 from immutables import Map
 from pymongo import collection
 
-from .prompts import MedicalPrompter
+from .prompts import DietPrompter
 
 def ask_gpt(
     message: str, 
@@ -39,15 +39,15 @@ def ask_gpt(
     system_message: str = "***SYSTEM RULES***\n"
     for flag, rule_type in rule_types.items():
         if flags.get(flag, True):
-            system_message += MedicalPrompter.get_rules(rule_type)
+            system_message += DietPrompter.get_rules(rule_type)
 
     system_message += "***PREVIOUS CONVERSATION HISTORY***:\n"
-    system_message += MedicalPrompter.get_latest_records(collectionGPT, session_id)
+    system_message += DietPrompter.get_latest_records(collectionGPT, session_id)
 
     user_message: str = (
         "***USER MESSAGE***:\n"
-        + MedicalPrompter.get_user_message(message, original_language)
-        + MedicalPrompter.get_file_content(file_name, file_content)
+        + DietPrompter.get_user_message(message, original_language)
+        + DietPrompter.get_file_content(file_name, file_content)
     )
     
     model: str = os.getenv("GROQ_GPT_MODEL", "llama-3.3-70b-versatile")

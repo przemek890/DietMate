@@ -1,4 +1,5 @@
 #!/bin/sh
+set -e
 
 has_ssl=true
 CERT_FILE="./SSL/fullchain.pem"
@@ -8,7 +9,7 @@ if [ -n "$SSL_CERT_BASE64" ]; then
     echo "Decoding SSL certificate..."
     echo "$SSL_CERT_BASE64" | base64 -d > "$CERT_FILE"
 else
-    echo "Missing SSL certificate (SSL_CERT_BASE64)."
+    echo "No SSL certificate (SSL_CERT_BASE64) provided."
     has_ssl=false
 fi
 
@@ -16,13 +17,18 @@ if [ -n "$SSL_KEY_BASE64" ]; then
     echo "Decoding SSL key..."
     echo "$SSL_KEY_BASE64" | base64 -d > "$KEY_FILE"
 else
-    echo "Missing SSL key (SSL_KEY_BASE64)."
+    echo "No SSL key (SSL_KEY_BASE64) provided."
     has_ssl=false
 fi
 
-echo "Gateway application domain: $REACT_APP_DOMAIN"
+source ./runtime-env.sh
 
 sleep 1
 
-echo "Starting Remix server..."
-exec npm start
+if [ "$has_ssl" = true ]; then
+    echo "Starting app with SSL..."
+    exec serve -s build --ssl-cert "$CERT_FILE" --ssl-key "$KEY_FILE"
+else
+    echo "No SSL certificates found, starting without SSL..."
+    exec serve -s build
+fi
