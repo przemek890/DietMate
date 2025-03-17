@@ -87,14 +87,15 @@ jobs:
         with:
           username: ${{ secrets.FRONTEND_DOCKER_USER }}
           password: ${{ secrets.FRONTEND_DOCKER_PASS }}
-          - name: Build frontend image
-            run: |
-              docker build \
-            --build-arg REACT_APP_DOMAIN=https://${{ secrets.DOMAIN }} \
-            --build-arg SSL_KEY_BASE64=${{ env.PRIVKEY }} \
-            --build-arg SSL_CERT_BASE64=${{ env.FULLCHAIN }} \
-            -t dietmate-frontend:latest \
-            -f frontend/Dockerfile frontend/
+
+      - name: Build frontend image
+        run: |
+          docker build \
+                --build-arg REACT_APP_DOMAIN=https://${{ secrets.DOMAIN }} \
+                --build-arg SSL_KEY_BASE64=${{ env.PRIVKEY }} \
+                --build-arg SSL_CERT_BASE64=${{ env.FULLCHAIN }} \
+                -t dietmate-frontend:latest \
+                -f frontend/Dockerfile frontend/
 
       - name: Push frontend image
         run: |
