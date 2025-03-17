@@ -100,3 +100,4 @@ jobs:
       - name: Push frontend image
         run: |
           docker push dietmate-frontend:latest
+
