@@ -1,7 +1,7 @@
 #!/bin/bash
 
-DOMAIN=${DOMAIN}
-TOKEN_DUCKDNS=${TOKEN_DUCKDNS}
+DOMAIN=dietmate.duckdns.org
+TOKEN_DUCKDNS=f898f46c-fc8d-458d-8948-23a79b0be79c
 WAIT_TIME=300
 INTERVAL=5
 LOGFILE="/tmp/certbot_output.log"
