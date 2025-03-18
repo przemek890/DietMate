@@ -69,7 +69,7 @@ jobs:
 
       - name: Build backend image
         run: |
-            docker build 
+            docker build \
                   --build-arg REACT_APP_DOMAIN=https://${{ secrets.DOMAIN }} \
                   --build-arg FULLCHAIN=${{ env.FULLCHAIN }} \
                   --build-arg PRIVKEY=${{ env.PRIVKEY }} \
@@ -79,8 +79,7 @@ jobs:
                   --build-arg GROQ_GPT_MODEL=${{ secrets.GROQ_GPT_MODEL }} \
                   -t dietmate-backend:latest \
                   -f backend/Dockerfile backend/
-        run: |
-          docker push dietmate-backend:latest
+            docker push dietmate-backend:latest
 
       - name: Log in to Docker Hub (frontend)
         uses: docker/login-action@v2
@@ -100,4 +99,3 @@ jobs:
       - name: Push frontend image
         run: |
           docker push dietmate-frontend:latest
-
