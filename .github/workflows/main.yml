@@ -4,9 +4,6 @@ on:
   push:
     branches:
       - main
-  pull_request:
-    branches:
-      - main
 
 jobs:
   build:
@@ -26,6 +23,11 @@ jobs:
         run: |
           chmod +x azure/hooks/manual-auth-hook.sh
           chmod +x azure/hooks/manual-cleanup-hook.sh
+
+      - name: Run cleanup hook
+        run: |
+          sudo bash azure/hooks/manual-cleanup-hook.sh
+          sleep 10
 
       - name: Run Certbot without email
         run: |
@@ -65,19 +67,18 @@ jobs:
 
       - name: Build backend image
         run: |
-            docker build \
-                  --build-arg REACT_APP_DOMAIN=https://${{ secrets.DOMAIN }} \
-                  --build-arg SSL_CERT_BASE64=$(cat fullchain.pem.base64) \
-                  --build-arg SSL_KEY_BASE64=$(cat privkey.pem.base64) \
-                  --build-arg MONGO_CONNECTION_STRING=${{ secrets.MONGO_CONNECTION_STRING }} \
-                  --build-arg GROQ_API_KEY=${{ secrets.GROQ_API_KEY }} \
-                  --build-arg GROQ_GPT_MODEL=${{ secrets.GROQ_GPT_MODEL }} \
-                  -t ${{ secrets.BACKEND_DOCKER_USER }}/dietmate-backend:latest \
-                  -f backend/Dockerfile backend/
-
-      - name: Push backend image
-        run: |
-          docker push ${{ secrets.BACKEND_DOCKER_USER }}/dietmate-backend:latest
+          docker buildx build \
+            --build-arg REACT_APP_DOMAIN=https://${{ secrets.DOMAIN }} \
+            --build-arg SSL_CERT_BASE64=$(tr -d '\n' < fullchain.pem.base64) \
+            --build-arg SSL_KEY_BASE64=$(tr -d '\n' < privkey.pem.base64) \
+            --build-arg MONGO_CONNECTION_STRING=${{ secrets.MONGO_CONNECTION_STRING }} \
+            --build-arg GROQ_API_KEY=${{ secrets.GROQ_API_KEY }} \
+            --build-arg GROQ_GPT_MODEL=${{ secrets.GROQ_GPT_MODEL }} \
+            -t ${{ secrets.BACKEND_DOCKER_USER }}/dietmate-backend:latest \
+            --platform linux/amd64 \
+            --push \
+            -f backend/Dockerfile \
+            ./backend
 
       - name: Log in to Docker Hub (frontend)
         uses: docker/login-action@v2
@@ -87,13 +88,12 @@ jobs:
 
       - name: Build frontend image
         run: |
-          docker build \
-                --build-arg REACT_APP_DOMAIN=https://${{ secrets.DOMAIN }} \
-                --build-arg SSL_CERT_BASE64=$(cat fullchain.pem.base64) \
-                --build-arg SSL_KEY_BASE64=$(cat privkey.pem.base64) \
-                -t ${{ secrets.BACKEND_DOCKER_USER }}/dietmate-frontend:latest \
-                -f frontend/Dockerfile frontend/
-
-      - name: Push frontend image
-        run: |
-          docker push ${{ secrets.BACKEND_DOCKER_USER }}/dietmate-frontend:latest
+            docker buildx build \
+                  --build-arg REACT_APP_DOMAIN=https://${{ secrets.DOMAIN }} \
+                  --build-arg SSL_CERT_BASE64=$(tr -d '\n' < fullchain.pem.base64) \
+                  --build-arg SSL_KEY_BASE64=$(tr -d '\n' < privkey.pem.base64) \
+                  -t ${{ secrets.FRONTEND_DOCKER_USER }}/dietmate-frontend:latest \
+                  --platform linux/amd64 \
+                  --push \
+                  -f frontend/Dockerfile \
+                  ./frontend

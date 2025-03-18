@@ -57,3 +57,6 @@ next-env.d.ts
 
 # terraform
 terraform.tfvars
+
+# node
+**/runtime-env.js
