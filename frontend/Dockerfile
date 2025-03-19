@@ -25,10 +25,6 @@ COPY --from=builder /builder/build ./build
 COPY --from=builder /builder/runtime-env.sh ./
 COPY --from=builder /builder/entrypoint.sh ./
 
-ARG REACT_APP_DOMAIN
-ARG SSL_KEY_BASE64
-ARG SSL_CERT_BASE64
-
 ENV REACT_APP_DOMAIN=${REACT_APP_DOMAIN}
 ENV SSL_KEY_BASE64=${SSL_KEY_BASE64}
 ENV SSL_CERT_BASE64=${SSL_CERT_BASE64}

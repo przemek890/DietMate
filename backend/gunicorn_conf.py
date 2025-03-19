@@ -9,7 +9,6 @@ workers = multiprocessing.cpu_count() * 2 + 1
 accesslog = "-"
 errorlog = "-"
 loglevel = "info"
-capture_output = True
 
 wsgi_app = "app:app"
 

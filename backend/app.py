@@ -17,7 +17,11 @@ else:
     CORS(app, supports_credentials=True)
 
 # MongoDB connection configuration
-client = MongoClient(os.getenv('MONGO_CONNECTION_STRING'))
+connection: str = os.getenv("MONGO_CONNECTION_STRING", "").strip()
+if not connection:
+    raise ValueError("MONGO_CONNECTION_STRING environment variable must be set")
+
+client: MongoClient = MongoClient(connection)
 db = client.dietmate
 collection1: collection.Collection = db['GPT']
 
