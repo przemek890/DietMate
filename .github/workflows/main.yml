@@ -34,13 +34,11 @@ jobs:
           sudo -E certbot --manual --preferred-challenges dns certonly \
           -d ${{ secrets.DOMAIN }} \
           --manual-auth-hook azure/hooks/manual-auth-hook.sh \
+          --manual-cleanup-hook azure/hooks/manual-cleanup-hook.sh \
           --agree-tos \
           --register-unsafely-without-email \
           --non-interactive
 
-      - name: Run cleanup hook
-        run: |
-          sudo -E bash azure/hooks/manual-cleanup-hook.sh
 
       - name: Base64 encode SSL certificates
         run: |
