@@ -39,7 +39,6 @@ jobs:
           --register-unsafely-without-email \
           --non-interactive
 
-
       - name: Base64 encode SSL certificates
         run: |
           sudo base64 -i /etc/letsencrypt/live/${{ secrets.DOMAIN }}/fullchain.pem > fullchain.pem.base64
@@ -106,14 +105,18 @@ jobs:
         with:
           name: ssl-certificates
 
-      - name: Restore Terraform state if available
+      - name: Restore Terraform state from GitHub Deployment API
         run: |
           mkdir -p azure/state
-          if [ -f azure/state/terraform.tfstate ]; then
-            echo "Restoring existing Terraform state..."
-            cp azure/state/terraform.tfstate azure/terraform/terraform.tfstate
+          response=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${{ github.repository }}/deployments?environment=DIETMATE&per_page=1")
+          state=$(echo "$response" | jq -r '.[0].payload.terraform_state // empty')
+          if [ -n "$state" ]; then
+            echo "Restoring Terraform state..."
+            echo "$state" | base64 -d > azure/state/terraform.tfstate
           else
-            echo "No existing Terraform state found. Proceeding with initialization."
+            echo "No existing Terraform state found. Continuing with initialization."
           fi
 
       - name: Azure Login with interactive authentication and timeout
@@ -168,7 +171,7 @@ jobs:
         working-directory: azure/terraform
         run: terraform init
 
-      - name: Check Terraform state consistency and resource existence
+      - name: Check Terraform state consistency and resource existence / Apply changes
         working-directory: azure/terraform
         run: |
           # Run plan - exit code 0 = no changes, 2 = changes detected
@@ -181,20 +184,23 @@ jobs:
           else
             echo "State is outdated or cloud resources are missing. Recreating resources..."
             terraform apply -auto-approve
-            cp terraform.tfstate ../state/terraform.tfstate
           fi
 
-      - name: Push updated Terraform state to repository
+      - name: Create GitHub deployment with Terraform state
         run: |
-          git config --global user.name "github-actions"
-          git config --global user.email "github-actions@github.com"
-          git add azure/state/terraform.tfstate
-          git commit -m "Update Terraform state" || echo "No changes to commit"
-          git push origin main || echo "No changes to push"
-
-      - name: Terraform Apply
-        working-directory: azure/terraform
-        run: terraform apply -auto-approve
-        env:
-          ARM_USE_CLI: true
-          ARM_SUBSCRIPTION_ID: ${{ secrets.SUBSCRIPTION_ID }}
+          if [ -f azure/state/terraform.tfstate ]; then
+            state=$(base64 -w 0 azure/state/terraform.tfstate | jq -Rsa .)
+            curl -X POST \
+              -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+              -H "Accept: application/vnd.github+json" \
+              https://api.github.com/repos/${{ github.repository }}/deployments \
+              -d "{
+                    \"ref\": \"${GITHUB_SHA}\",
+                    \"environment\": \"DIETMATE\",
+                    \"payload\": {\"terraform_state\": $state},
+                    \"description\": \"Updated Terraform state via deployment API\",
+                    \"required_contexts\": []
+                  }"
+          else
+            echo "No Terraform state file found. Skipping deployment creation."
+          fi
