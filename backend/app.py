@@ -84,7 +84,8 @@ def ask_gpt_endpoint(session_id: str) -> Response:
                     "bot_message": bot_message,
                     "file_name": file_name,
                     "file_content": file_content,
-                    "date_added": datetime.datetime.now()
+                    "date_added": datetime.datetime.now(),
+                    "model": os.getenv("GROQ_GPT_MODEL", "")
                 }
                 collection1.insert_one(document)
 
