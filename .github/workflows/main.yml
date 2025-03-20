@@ -29,8 +29,6 @@ jobs:
           chmod +x azure/hooks/manual-auth-hook.sh
           chmod +x azure/hooks/manual-cleanup-hook.sh
 
-
-
       - name: Run Certbot without email
         run: |
           sudo -E certbot --manual --preferred-challenges dns certonly \
@@ -89,19 +87,19 @@ jobs:
 
       - name: Build frontend image
         run: |
-            docker buildx build \
-                  -t ${{ secrets.FRONTEND_DOCKER_USER }}/dietmate-frontend:latest \
-                  --platform linux/amd64 \
-                  --push \
-                  -f frontend/Dockerfile \
-                  ./frontend
+          docker buildx build \
+            -t ${{ secrets.FRONTEND_DOCKER_USER }}/dietmate-frontend:latest \
+            --platform linux/amd64 \
+            --push \
+            -f frontend/Dockerfile \
+            ./frontend
 
   terraform:
     needs: build
     environment: DIETMATE
     runs-on: ubuntu-latest
-    steps:
 
+    steps:
       - name: Checkout repository
         uses: actions/checkout@v2
       
@@ -109,6 +107,16 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: ssl-certificates
+
+      - name: Restore Terraform state if available
+        run: |
+          mkdir -p azure/state
+          if [ -f azure/state/terraform.tfstate ]; then
+            echo "Restoring existing Terraform state..."
+            cp azure/state/terraform.tfstate azure/terraform/terraform.tfstate
+          else
+            echo "No existing Terraform state found. Proceeding with initialization."
+          fi
 
       - name: Azure Login with interactive authentication and timeout
         run: |
@@ -157,10 +165,34 @@ jobs:
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v1
-        
+
       - name: Initialize Terraform
         working-directory: azure/terraform
         run: terraform init
+
+      - name: Check Terraform state consistency and resource existence
+        working-directory: azure/terraform
+        run: |
+          # Run plan - exit code 0 = no changes, 2 = changes detected
+          set +e
+          terraform plan -detailed-exitcode
+          plan_exit=$?
+          set -e
+          if [ $plan_exit -eq 0 ]; then
+            echo "Terraform state is up to date. No changes required."
+          else
+            echo "State is outdated or cloud resources are missing. Recreating resources..."
+            terraform apply -auto-approve
+            cp terraform.tfstate ../state/terraform.tfstate
+          fi
+
+      - name: Push updated Terraform state to repository
+        run: |
+          git config --global user.name "github-actions"
+          git config --global user.email "github-actions@github.com"
+          git add azure/state/terraform.tfstate
+          git commit -m "Update Terraform state" || echo "No changes to commit"
+          git push origin main || echo "No changes to push"
 
       - name: Terraform Apply
         working-directory: azure/terraform
@@ -168,4 +200,3 @@ jobs:
         env:
           ARM_USE_CLI: true
           ARM_SUBSCRIPTION_ID: ${{ secrets.SUBSCRIPTION_ID }}
-
