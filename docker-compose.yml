@@ -7,6 +7,12 @@ x-MONGO_CONNECTION_STRING: &MONGO_CONNECTION_STRING
 x-GROQ_API_KEY: &GROQ_API_KEY
   GROQ_API_KEY: ${GROQ_API_KEY} 
 
+x-GOOGLE_API_KEY: &GOOGLE_API_KEY
+  GOOGLE_API_KEY: ${GOOGLE_API_KEY}
+
+x-GOOGLE_CX: &GOOGLE_CX
+  GOOGLE_CX: ${GOOGLE_CX}
+
 ######################################################################################
 
 version: '3'
@@ -29,7 +35,7 @@ services:
     ports:
       - "5000:5000"
     environment:
-      <<: [*REACT_APP_DOMAIN,*MONGO_CONNECTION_STRING,*GROQ_API_KEY]
+      <<: [*REACT_APP_DOMAIN,*MONGO_CONNECTION_STRING,*GROQ_API_KEY,*GOOGLE_API_KEY,*GOOGLE_CX]
     depends_on:
       -  mongodb
 
