@@ -8,15 +8,19 @@ DietMate – Your Smart Diet Companion.  Plan meals, track calories, and balance
 Before running the application, configure the following environment variables in your shell:
 
 ```bash
-REACT_APP_DOMAIN=http://localhost
+REACT_APP_DOMAIN=http://localhost # For local development.
 ```
 ```bash
 MONGO_CONNECTION_STRING=<<<MONGO_CONNECTION_STRING>>>
 ```
-
 ```bash
 # Get your API key at https://console.groq.com/keys
 GROQ_API_KEY=<<<API_KEY>>>
+```
+```bash
+# Get your SECRETS at https://console.cloud.google.com/apis/api/customsearch.googleapis.com
+GOOGLE_API_KEY=<<<GOOGLE_API_KEY>>>
+GOOGLE_CX=<<<GOOGLE_CX>>>
 ```
 
 These variables are essential for proper application functionality. Set them in your host shell environment before proceeding with deployment.
