@@ -23,6 +23,7 @@ interface ConversationMessage {
   content: string;
   alert?: boolean;
   task?: boolean;
+  isGenerating?: boolean;
 }
 
 const GPT: React.FC<GPTProps> = ({ sessionToken, setSessionToken }) => {
@@ -34,6 +35,7 @@ const GPT: React.FC<GPTProps> = ({ sessionToken, setSessionToken }) => {
   const [fileUploaded, setFileUploaded] = useState<boolean>(false);
   const [conversation, setConversation] = useState<ConversationMessage[]>([]);
   const [snackbarOpen, setSnackbarOpen] = useState<boolean>(false);
+  const [isGenerating, setIsGenerating] = useState<boolean>(false);
   const conversationEndRef = useRef<HTMLDivElement | null>(null);
   const theme = useTheme();
 
@@ -53,11 +55,19 @@ const GPT: React.FC<GPTProps> = ({ sessionToken, setSessionToken }) => {
       const userMessage = fileName
         ? `${inputText.trim()}\n\n[${t('uploaded_file')}: ${fileName}]`
         : inputText.trim();
-
+  
       setConversation(prev => [...prev, { type: 'user', content: userMessage }]);
-
+      
+      setConversation(prev => [...prev, { 
+        type: 'bot', 
+        content: '', 
+        isGenerating: true 
+      }]);
+      
+      setIsGenerating(true);
+  
       fetchFromServer(inputText.trim(), fileName, fileContent);
-
+  
       setInputText('');
       setFileName('');
       setFileContent('');
@@ -81,6 +91,7 @@ const GPT: React.FC<GPTProps> = ({ sessionToken, setSessionToken }) => {
     setFileName('');
     setFileContent('');
     setFileUploaded(false);
+    setIsGenerating(false);
   
     const resetSession = async () => {
       try {
@@ -170,6 +181,7 @@ const GPT: React.FC<GPTProps> = ({ sessionToken, setSessionToken }) => {
           content: errorMessage,
           alert: true
         }]);
+        setIsGenerating(false);
         return;
       }
 
@@ -177,60 +189,83 @@ const GPT: React.FC<GPTProps> = ({ sessionToken, setSessionToken }) => {
         const errorData = await response.json();
         if (errorData.message === "Invalid or expired token") {
           setSessionToken('');
-        setConversation(prev => [...prev, {
-        type: 'bot',
-        content: t('invalid_or_expired_token'),
-        alert: true
+          setConversation(prev => [...prev, {
+            type: 'bot',
+            content: t('invalid_or_expired_token'),
+            alert: true
           }]);
+          setIsGenerating(false);
           return;
         }
       }
 
       if (!response || !response.body) {
         const errorMessage = t('errorMessage');
-        setConversation(prev => [...prev, {
-          type: 'bot',
-          content: errorMessage,
-          alert: true
-        }]);
-        return;
-      }
-
-
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder("utf-8");
-      let botMessage = '';
-      const botMessagePlaceholder = { type: 'bot', content: '' };
-      setConversation((prev: any) => [...prev, botMessagePlaceholder]);
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        const chunk = decoder.decode(value, { stream: true });
-        botMessage += chunk;
-
-        const containsError = botMessage.includes("***ERROR***:");
+        
         setConversation(prev => {
           const updatedConversation = [...prev];
-          if (containsError) {
-            const errorMessage = botMessage.split("***ERROR***:")[1].trim();
+          if (updatedConversation.length > 0) {
             updatedConversation[updatedConversation.length - 1] = {
               type: 'bot',
               content: errorMessage,
-              alert: true
-            };
-          } else {
-            updatedConversation[updatedConversation.length - 1] = {
-              type: 'bot',
-              content: botMessage,
-              alert: botMessage.includes("***ERROR***")
+              alert: true,
+              isGenerating: false
             };
           }
           return updatedConversation;
         });
-
-        if (containsError) break;
+        
+        setIsGenerating(false);
+        return;
       }
+  
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder("utf-8");
+      let botMessage = '';
+  
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) {
+          setIsGenerating(false);
+          break;
+        }
+        const chunk = decoder.decode(value, { stream: true });
+        botMessage += chunk;
+  
+        const containsError = botMessage.includes("***ERROR***:");
+        
+        setConversation(prev => {
+          const updatedConversation = [...prev];
+          if (updatedConversation.length > 0) {
+            updatedConversation[updatedConversation.length - 1] = {
+              type: 'bot',
+              content: containsError ? botMessage.split("***ERROR***:")[1].trim() : botMessage,
+              alert: botMessage.includes("***ERROR***"),
+              isGenerating: !containsError
+            };
+          }
+          return updatedConversation;
+        });
+  
+        if (containsError) {
+          setIsGenerating(false);
+          break;
+        }
+      }
+
+      setConversation(prev => {
+        const updatedConversation = [...prev];
+        if (updatedConversation.length > 0) {
+          const lastMessage = updatedConversation[updatedConversation.length - 1];
+          if (lastMessage.type === 'bot' && lastMessage.isGenerating) {
+            updatedConversation[updatedConversation.length - 1] = {
+              ...lastMessage,
+              isGenerating: false
+            };
+          }
+        }
+        return updatedConversation;
+      });
     } catch (error) {
       console.error('error_fetching_data', error);
       const errorMessage = {
@@ -239,8 +274,10 @@ const GPT: React.FC<GPTProps> = ({ sessionToken, setSessionToken }) => {
         alert: true
       };
       setConversation((prev: any) => [...prev, errorMessage]);
+      setIsGenerating(false);
     }
   };
+  
   useEffect(() => {
     const scrollTimeout = setTimeout(() => {
       if (conversationEndRef.current) {
@@ -261,12 +298,12 @@ const GPT: React.FC<GPTProps> = ({ sessionToken, setSessionToken }) => {
         onClose={toggleDrawer}
         PaperProps={{
           sx: {
-        width: '600px',
-        borderTopRightRadius: '20px',
-        borderBottomRightRadius: '20px',
-        backgroundColor: theme.palette.background.default,
-        color: theme.palette.primary.main,
-        overflowX: 'hidden',
+            width: '600px',
+            borderTopRightRadius: '20px',
+            borderBottomRightRadius: '20px',
+            backgroundColor: theme.palette.background.default,
+            color: theme.palette.primary.main,
+            overflowX: 'hidden',
           },
         }}
       >
@@ -288,6 +325,7 @@ const GPT: React.FC<GPTProps> = ({ sessionToken, setSessionToken }) => {
             fileName={fileName}
             fileUploaded={fileUploaded}
             handleRemoveFile={handleRemoveFile}
+            isGenerating={isGenerating}
           />
           <Typography variant="caption" sx={{ textAlign: 'center', color: 'text.secondary' }}>
             {t('gpt_disclaimer')}

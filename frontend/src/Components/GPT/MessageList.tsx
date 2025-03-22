@@ -1,17 +1,19 @@
 import React from 'react';
-import { Box, Typography, Avatar, IconButton } from '@mui/material';
+import { Box, Typography, Avatar, IconButton, CircularProgress } from '@mui/material';
 import HealingIcon from '@mui/icons-material/Healing';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus, vs } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { useTheme } from '@mui/material/styles';
 import formatMessageContent from "../../Utils/formatMessageContent";
+import { useTranslation } from 'react-i18next';
 
 interface Message {
   type: 'user' | 'bot';
   content: string;
   alert?: boolean;
   task?: boolean;
+  isGenerating?: boolean;
 }
 
 interface MessageListProps {
@@ -26,6 +28,7 @@ const MessageList: React.FC<MessageListProps> = ({
   handleCopyCode
 }) => {
   const theme = useTheme();
+  const { t } = useTranslation();
 
   const renderMessage = (message: Message, index: number) => {
     const codeBlockRegex = /```(\w+)?\n([\s\S]*?)```/g;
@@ -76,6 +79,26 @@ const MessageList: React.FC<MessageListProps> = ({
           ml: message.type === 'user' ? 'auto' : 0,
           mr: message.type === 'user' ? 0 : 'auto',
         }}>
+          {message.type === 'bot' && message.isGenerating && (
+            <Box 
+              sx={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                mb: 1, 
+                opacity: 0.5,
+                backgroundColor: theme.palette.mode === 'dark' ? 'grey.900' : 'grey.100',
+                p: 1.5,
+                borderRadius: 3,
+                border: theme.palette.mode === 'light'
+                  ? '1px solid rgba(0, 0, 0, 0.12)'
+                  : '1px solid rgba(255, 255, 255, 0.12)',
+              }}
+            >
+              <CircularProgress size={20} sx={{ mr: 1 }} />
+              <Typography variant="body2">{t('generating')}</Typography>
+            </Box>
+          )}
+          
           {parts.map((part, partIndex) => (
             part.type === 'code' ? (
               <Box key={partIndex} sx={{ position: 'relative', width: '100%', mb: 1 }}>
