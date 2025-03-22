@@ -38,11 +38,11 @@ class DietPrompter:
         Returns:
              str: A string containing concatenated user and bot messages from recent conversations
         """
-        query = {"session_id": session_id}
-        
-        records_list = list(collection.find(query))
-        
-        records = sorted(records_list, key=lambda x: x.get("date_added", datetime.datetime.min), reverse=True)
+        records = list(collection.aggregate([
+            {"$match": {"session_id": session_id}},
+            {"$sort": {"date_added": -1}},
+            {"$limit": 15}
+        ]))
         
         records_text = ""
         total_words = 0
