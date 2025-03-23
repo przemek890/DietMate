@@ -103,44 +103,101 @@ def gpt_search(query: str, client, original_language, flags: dict = None,):
     
     system_message += "***SEARCH RESULTS***:\n"
 
-    search_url = f"https://www.googleapis.com/customsearch/v1?q={query}&key={API_KEY}&cx={CX}&num=1"
-
+    # Get search results
     try:
-        response = requests.get(search_url)
-        search_data = response.json()
-
+        search_url = f"https://www.googleapis.com/customsearch/v1?q={query}&key={API_KEY}&cx={CX}&num=3"
+        search_response = requests.get(search_url, timeout=10)
+        
+        if search_response.status_code != 200:
+            yield f"***ERROR***: Google Search API returned status code {search_response.status_code}"
+            return
+            
+        search_data = search_response.json()
+        
         if "error" in search_data:
             yield f"***ERROR***: {search_data['error']['message']}"
             return
-
-        url = search_data.get("items", [{}])[0].get("link")
-
-        if not url:
-            yield "***ERROR***: No results found"
+            
+        # Extract URLs from search results
+        urls = []
+        for item in search_data.get("items", []):
+            if item.get("link"):
+                urls.append(item.get("link"))
+                
+        if not urls:
+            yield "***ERROR***: No search results found"
             return
-
+            
     except Exception as e:
-        yield f"***ERROR***: {str(e)}"
+        yield f"***ERROR***: Search failed: {str(e)}"
         return
 
+    # Process URLs and get content
+    valid_urls = []
+    combined_text = ""
+    errors = []
+    
+    for url in urls:
+        try:
+            response = requests.get(url, timeout=5)
+            
+            # Skip forbidden or error responses
+            if response.status_code == 403:
+                errors.append(f"***ERROR***: Access forbidden (403) for URL: {url}")
+                continue
+            elif response.status_code >= 400:
+                errors.append(f"***ERROR***: HTTP error {response.status_code} for URL: {url}")
+                continue
+                
+            # Process successful responses
+            soup = BeautifulSoup(response.text, 'html.parser')
+            for script in soup(["script", "style"]):
+                script.extract()
+            text = soup.get_text(separator=' ', strip=True)
+            
+            if not text or len(text) < 50:
+                errors.append(f"***ERROR***: Insufficient content from URL: {url}")
+                continue
+                
+            # Add URL's text to combined text
+            MAX_CHARS_PER_URL = 2500
+            combined_text += f"\n--- Content from {url} ---\n"
+            combined_text += text[:MAX_CHARS_PER_URL]
+            
+            valid_urls.append(url)
+            
+            # If we have content from 3 valid URLs, stop
+            if len(valid_urls) >= 3:
+                break
+                
+        except requests.exceptions.Timeout:
+            errors.append(f"***ERROR***: Request timed out for URL: {url}")
+            continue
+        except requests.exceptions.ConnectionError:
+            errors.append(f"***ERROR***: Connection error for URL: {url}")
+            continue
+        except Exception as e:
+            errors.append(f"***ERROR***: {str(e)} for URL: {url}")
+            continue
+    
+    # If no valid URLs were found, yield all error messages
+    if not valid_urls:
+        for error in errors:
+            yield error
+        yield "***ERROR***: Could not retrieve content from any URL"
+        return
+        
+    # Trim combined text if it's too long
+    MAX_TOTAL_CHARS = 5000
+    if len(combined_text) > MAX_TOTAL_CHARS:
+        combined_text = combined_text[:MAX_TOTAL_CHARS]
+        
+    system_message += combined_text
+
+    model = os.getenv("GROQ_GPT_MODEL", "llama-3.3-70b-versatile")
+
+    # Make LLM request
     try:
-        response = requests.get(url, timeout=5)
-        if response.status_code != 200:
-            yield f"***ERROR***: Could not find the requested webpage"
-            return
-
-        soup = BeautifulSoup(response.text, 'html.parser')
-        for script in soup(["script", "style"]):
-            script.extract()
-        text = soup.get_text(separator=' ', strip=True)
-
-        MAX_CHARS = 5000
-        text = text[:MAX_CHARS]
-
-        system_message += text
-
-        model = os.getenv("GROQ_GPT_MODEL", "llama-3.3-70b-versatile")
-
         completion = client.chat.completions.create(
             model=model,
             messages=[
@@ -155,13 +212,17 @@ def gpt_search(query: str, client, original_language, flags: dict = None,):
         )
 
         for chunk in completion:
-            yield chunk.choices[0].delta.content or ""
+            content = chunk.choices[0].delta.content or ""
+            yield content
 
-    except requests.exceptions.Timeout:
-        yield f"***ERROR***: Request timed out for {url}"
-    except requests.exceptions.RequestException as e:
-        yield f"***ERROR***: {str(e)}"
     except Exception as e:
-        yield f"***ERROR***: {str(e)}"
+        yield f"***ERROR***: LLM request failed: {str(e)}"
+        return
 
-    yield f"\n---\n🔗 {url}"
+    yield "\n---\n"
+    
+    for i, url in enumerate(valid_urls):
+        if i == 0:
+            yield f"🔗 {url}\n"
+        else:
+            yield f"{url}\n"
