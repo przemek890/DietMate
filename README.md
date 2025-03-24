@@ -25,6 +25,18 @@ GOOGLE_CX=<<<GOOGLE_CX>>>
 
 These variables are essential for proper application functionality. Set them in your host shell environment before proceeding with deployment.
 
+---
+### How to Run Redis
+
+To start Redis service:
+
+```bash
+docker compose up --build redis
+```
+
+**Note**: The Redis container will persist due to its `unless-stopped` restart policy.
+
+---
 
 ### How to Run
 

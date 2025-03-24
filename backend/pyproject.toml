@@ -20,6 +20,7 @@ deep-translator = "*"
 langdetect = "*"
 PyJWT = "*"
 BeautifulSoup4 = "*"
+redis = "*"
 
 
 [build-system]
