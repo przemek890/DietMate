@@ -398,17 +398,8 @@ resource "azurerm_container_group" "backend" {
       SSL_CERT_BASE64         = var.ssl_cert_base64
       GOOGLE_API_KEY          = var.google_api_key
       GOOGLE_CX               = var.google_cx
-    }
-  }
-
-  container {
-    name   = "redis"
-    image  = "redis:8.0-M04-bookworm"
-    cpu    = 0.5
-    memory = 0.5
-    ports {
-      port     = 6379
-      protocol = "TCP"
+      REDIS_CLOUD_HOST        = var.redis_cloud_host
+      REDIS_CLOUD_PASSWORD    = var.redis_cloud_password
     }
   }
 

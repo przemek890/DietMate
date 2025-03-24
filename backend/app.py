@@ -30,13 +30,26 @@ collection1: collection.Collection = db['GPT']
 # Redis connection configuration
 r = None
 try:
-    if is_docker():
-        host = "redis" 
-        print("✅ Detected Docker environment.")
+    redis_cloud_host = os.getenv("REDIS_CLOUD_HOST", None)
+    redis_cloud_password = os.getenv("REDIS_CLOUD_PASSWORD", None)
+    if redis_cloud_host and redis_cloud_password:
+        print("✅ Using Redis Cloud configuration (Free tier - 30MB).")
+        r = redis.Redis(
+            host=redis_cloud_host,
+            port=15355,
+            decode_responses=True,
+            username="default",
+            password=redis_cloud_password,
+        )
     else:
-        host = "localhost"
-        print("✅ Detected Host environment.")
-    r = redis.Redis(host=host, port=6379)
+        if is_docker():
+            host = "redis" 
+            print("✅ Detected Docker environment.")
+        else:
+            host = "localhost"
+            print("✅ Detected Host environment.")
+        r = redis.Redis(host=host, port=6379)
+    
     if r.ping():
         print("✅ Redis connection successful.")
     else:
