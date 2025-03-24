@@ -142,6 +142,8 @@ jobs:
           ssl_key_base64_value=$(tr -d '\n' < privkey.pem.base64)
           ssl_cert_base64_value=$(tr -d '\n' < fullchain.pem.base64)
           mongo_connection_string_value=$(echo "${{ secrets.MONGO_CONNECTION_STRING }}" | tr -d '\n')
+          redis_cloud_host_value=$(echo "${{ secrets.REDIS_CLOUD_HOST }}" | tr -d '\n')
+          redis_cloud_password_value=$(echo "${{ secrets.REDIS_CLOUD_PASSWORD }}" | tr -d '\n')
           cat <<EOF > azure/terraform/terraform.tfvars
           backend_image                                           = "dietmate/dietmate-backend:latest"
           frontend_image                                          = "dietmate1/dietmate-frontend:latest"
@@ -164,6 +166,8 @@ jobs:
           ssl_cert_base64                                         = "$ssl_cert_base64_value"     
           google_api_key                                          = "${{ secrets.GOOGLE_API_KEY }}" 
           google_cx                                               = "${{ secrets.GOOGLE_CX }}"
+          redis_cloud_host                                        = "$redis_cloud_host_value"
+          redis_cloud_password                                    = "$redis_cloud_password_value"
           EOF
 
       - name: Setup Terraform

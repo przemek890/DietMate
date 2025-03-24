@@ -113,3 +113,14 @@
         sensitive   = true
         description = "Google Custom Search Engine ID"
     }
+
+    variable "redis_cloud_host" {
+        type        = string
+        description = "Redis Cloud host address"
+    }
+
+    variable "redis_cloud_password" {
+        type        = string
+        sensitive   = true
+        description = "Redis Cloud password"
+    }
