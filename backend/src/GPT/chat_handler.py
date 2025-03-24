@@ -103,7 +103,6 @@ def gpt_search(query: str, client, original_language, flags: dict = None,):
     
     system_message += "***SEARCH RESULTS***:\n"
 
-    # Get search results
     try:
         search_url = f"https://www.googleapis.com/customsearch/v1?q={query}&key={API_KEY}&cx={CX}&num=3"
         search_response = requests.get(search_url, timeout=10)
@@ -118,7 +117,6 @@ def gpt_search(query: str, client, original_language, flags: dict = None,):
             yield f"***ERROR***: {search_data['error']['message']}"
             return
             
-        # Extract URLs from search results
         urls = []
         for item in search_data.get("items", []):
             if item.get("link"):
@@ -132,7 +130,6 @@ def gpt_search(query: str, client, original_language, flags: dict = None,):
         yield f"***ERROR***: Search failed: {str(e)}"
         return
 
-    # Process URLs and get content
     valid_urls = []
     combined_text = ""
     errors = []
@@ -141,7 +138,6 @@ def gpt_search(query: str, client, original_language, flags: dict = None,):
         try:
             response = requests.get(url, timeout=5)
             
-            # Skip forbidden or error responses
             if response.status_code == 403:
                 errors.append(f"***ERROR***: Access forbidden (403) for URL: {url}")
                 continue
@@ -149,7 +145,6 @@ def gpt_search(query: str, client, original_language, flags: dict = None,):
                 errors.append(f"***ERROR***: HTTP error {response.status_code} for URL: {url}")
                 continue
                 
-            # Process successful responses
             soup = BeautifulSoup(response.text, 'html.parser')
             for script in soup(["script", "style"]):
                 script.extract()
@@ -159,14 +154,12 @@ def gpt_search(query: str, client, original_language, flags: dict = None,):
                 errors.append(f"***ERROR***: Insufficient content from URL: {url}")
                 continue
                 
-            # Add URL's text to combined text
             MAX_CHARS_PER_URL = 2500
             combined_text += f"\n--- Content from {url} ---\n"
             combined_text += text[:MAX_CHARS_PER_URL]
             
             valid_urls.append(url)
             
-            # If we have content from 3 valid URLs, stop
             if len(valid_urls) >= 3:
                 break
                 
@@ -180,14 +173,12 @@ def gpt_search(query: str, client, original_language, flags: dict = None,):
             errors.append(f"***ERROR***: {str(e)} for URL: {url}")
             continue
     
-    # If no valid URLs were found, yield all error messages
     if not valid_urls:
         for error in errors:
             yield error
         yield "***ERROR***: Could not retrieve content from any URL"
         return
         
-    # Trim combined text if it's too long
     MAX_TOTAL_CHARS = 5000
     if len(combined_text) > MAX_TOTAL_CHARS:
         combined_text = combined_text[:MAX_TOTAL_CHARS]
@@ -196,7 +187,6 @@ def gpt_search(query: str, client, original_language, flags: dict = None,):
 
     model = os.getenv("GROQ_GPT_MODEL", "llama-3.3-70b-versatile")
 
-    # Make LLM request
     try:
         completion = client.chat.completions.create(
             model=model,
