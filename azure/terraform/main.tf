@@ -383,8 +383,8 @@ resource "azurerm_container_group" "backend" {
   container {
     name   = "dietmate-backend"
     image  = var.backend_image
-    cpu    = 2
-    memory = 4.0
+    cpu    = 1.5
+    memory = 3.5
     ports {
       port     = 5000
       protocol = "TCP"
@@ -401,6 +401,17 @@ resource "azurerm_container_group" "backend" {
     }
   }
 
+  container {
+    name   = "redis"
+    image  = "redis:8.0-M04-bookworm"
+    cpu    = 0.5
+    memory = 0.5
+    ports {
+      port     = 6379
+      protocol = "TCP"
+    }
+  }
+
   tags = {
     environment = "production"
   }
@@ -410,7 +421,6 @@ resource "azurerm_container_group" "backend" {
     username = var.docker_registry_username_backend
     password = var.docker_registry_password_backend
   }
-  
 }
 
 resource "azurerm_container_group" "frontend" {

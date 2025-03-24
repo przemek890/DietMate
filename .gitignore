@@ -60,3 +60,12 @@ terraform.tfvars
 
 # node
 **/runtime-env.js
+
+# redis
+*.rdb
+*.aof
+*.dump
+*.rdb
+*.rdb.manifest
+*.aof.manifest
+

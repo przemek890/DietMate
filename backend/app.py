@@ -1,4 +1,5 @@
 from src.GPT.tools import stream_response, generate_jwt, require_valid_token
+from tools import is_docker
 from flask import Flask, request, jsonify, Response
 from flask_cors import CORS
 from typing import Dict, Any, Union
@@ -7,6 +8,7 @@ import os
 import groq
 import uuid
 import datetime
+import redis
 ############################################################################################################
 # Flask app initialization and CORS setup
 app = Flask(__name__)
@@ -24,6 +26,23 @@ if not connection:
 client: MongoClient = MongoClient(connection)
 db = client.dietmate
 collection1: collection.Collection = db['GPT']
+
+try:
+    if is_docker():
+        host = "redis" 
+        print("✅ Detected Docker environment.")
+    else:
+        host = "localhost"
+        print("✅ Detected Host environment.")
+    r = redis.Redis(host=host, port=6379)
+    if r.ping():
+        print("✅ Redis connection successful.")
+    else:
+        print("⚠️ Redis server is not responding.")
+        r = None     
+except Exception as e:
+    print("⚠️ Warning: Redis connection failed:", e)
+    r = None
 
 ############################################################################################################
 
