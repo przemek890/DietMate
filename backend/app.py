@@ -27,6 +27,8 @@ client: MongoClient = MongoClient(connection)
 db = client.dietmate
 collection1: collection.Collection = db['GPT']
 
+# Redis connection configuration
+r = None
 try:
     if is_docker():
         host = "redis" 
