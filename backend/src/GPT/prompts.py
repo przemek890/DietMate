@@ -1,6 +1,5 @@
 from typing import List, Dict, Optional
 from pymongo import collection
-import datetime
 
 class DietPrompter:
     """

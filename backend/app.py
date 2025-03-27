@@ -1,66 +1,20 @@
-from src.GPT.tools import stream_response, generate_jwt, require_valid_token
-from tools import is_docker
-from flask import Flask, request, jsonify, Response
-from flask_cors import CORS
-from typing import Dict, Any, Union
-from pymongo import MongoClient, collection
-import os
+from config import AppConfig
+from src.GPT.tools import stream_response
+from tools import generate_jwt, require_valid_token
+from flask import request, jsonify, Response
+from typing import Dict, Any
+import datetime
 import groq
 import uuid
-import datetime
-import redis
-############################################################################################################
-# Flask app initialization and CORS setup
-app = Flask(__name__)
-cors_origins = os.getenv("REACT_APP_DOMAIN", "http://localhost")
-if cors_origins.startswith('https'):
-    CORS(app, origins=[cors_origins], supports_credentials=True)
-else:
-    CORS(app, supports_credentials=True)
+import os
 
-# MongoDB connection configuration
-connection: str = os.getenv("MONGO_CONNECTION_STRING", "").strip()
-if not connection:
-    raise ValueError("MONGO_CONNECTION_STRING environment variable must be set")
+app_config = AppConfig()
+app = app_config.app
+redis_client = app_config.r
+collection1 = app_config.collection1
 
-client: MongoClient = MongoClient(connection)
-db = client.dietmate
-collection1: collection.Collection = db['GPT']
-
-# Redis connection configuration
-r = None
-try:
-    redis_cloud_host = os.getenv("REDIS_CLOUD_HOST", None)
-    redis_cloud_password = os.getenv("REDIS_CLOUD_PASSWORD", None)
-    if redis_cloud_host and redis_cloud_password:
-        print("✅ Using Redis Cloud configuration (Free tier - 30MB).")
-        r = redis.Redis(
-            host=redis_cloud_host,
-            port=15355,
-            decode_responses=True,
-            username="default",
-            password=redis_cloud_password,
-        )
-    else:
-        if is_docker():
-            host = "redis" 
-            print("✅ Detected Docker environment.")
-        else:
-            host = "localhost"
-            print("✅ Detected Host environment.")
-        r = redis.Redis(host=host, port=6379)
-    
-    if r.ping():
-        print("✅ Redis connection successful.")
-    else:
-        print("⚠️ Redis server is not responding.")
-        r = None     
-except Exception as e:
-    print("⚠️ Warning: Redis connection failed:", e)
-    r = None
 
 ############################################################################################################
-
 @app.route('/api/session', methods=['GET'])
 def manage_session():
     """
@@ -127,38 +81,9 @@ def ask_gpt_endpoint(session_id: str) -> Response:
                 print(f"Error saving interaction to the database: {db_error}")
 
         return response
-
     except Exception as e:
         return Response(f"***ERROR***: {e}", status=500)
-
-DIETS = [
-    {"id": 1, "name": "Keto", "description": "Ketogenic diet", "price": 150},
-    {"id": 2, "name": "Vegan", "description": "Vegan diet", "price": 130},
-    {"id": 3, "name": "Low-carb", "description": "Low-carbohydrate diet", "price": 100}
-]
 
 @app.route("/")
 def home():
     return jsonify({"message": "Welcome to the Flask API for Next.js - DietMate!"})
-
-@app.route("/api/diets", methods=["GET"])
-def get_all_diets():
-    return jsonify({"diets": DIETS})
-
-@app.route("/api/diets/<int:diet_id>", methods=["GET"])
-def get_diet_by_id(diet_id):
-    diet = next((d for d in DIETS if d["id"] == diet_id), None)
-    if diet is None:
-        return jsonify({"error": "Diet not found"}), 404
-    return jsonify(diet)
-
-@app.route("/api/purchase", methods=["POST"])
-def purchase_diet():
-    data = request.json
-    diet_id = data.get("dietId")
-    user_data = data.get("userData", {})
-    user_name = user_data.get("name", "Anonymous")
-    return jsonify({"message": f"User {user_name} has purchased diet ID {diet_id}!"}), 200
-
-if __name__ == "__main__":
-    app.run(debug=True)
