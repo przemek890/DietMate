@@ -176,11 +176,19 @@ const GPT: React.FC<GPTProps> = ({ sessionToken, setSessionToken }) => {
       if (response.status === 429) {
         const errorData = await response.json();
         const errorMessage = t('rate_limit_exceeded', { retry_after: errorData.retry_after });
-        setConversation(prev => [...prev, {
-          type: 'bot',
-          content: errorMessage,
-          alert: true
-        }]);
+        
+        setConversation(prev => {
+          const updatedConversation = [...prev];
+          updatedConversation.pop();
+          return [
+            ...updatedConversation, 
+            {
+              type: 'bot',
+              content: errorMessage,
+              alert: true
+            }
+          ];
+        });
         setIsGenerating(false);
         return;
       }
@@ -189,11 +197,19 @@ const GPT: React.FC<GPTProps> = ({ sessionToken, setSessionToken }) => {
         const errorData = await response.json();
         if (errorData.message === "Invalid or expired token") {
           setSessionToken('');
-          setConversation(prev => [...prev, {
-            type: 'bot',
-            content: t('invalid_or_expired_token'),
-            alert: true
-          }]);
+          
+          setConversation(prev => {
+            const updatedConversation = [...prev];
+            updatedConversation.pop();
+            return [
+              ...updatedConversation,
+              {
+                type: 'bot',
+                content: t('invalid_or_expired_token'),
+                alert: true
+              }
+            ];
+          });
           setIsGenerating(false);
           return;
         }
@@ -204,15 +220,15 @@ const GPT: React.FC<GPTProps> = ({ sessionToken, setSessionToken }) => {
         
         setConversation(prev => {
           const updatedConversation = [...prev];
-          if (updatedConversation.length > 0) {
-            updatedConversation[updatedConversation.length - 1] = {
+          updatedConversation.pop();
+          return [
+            ...updatedConversation,
+            {
               type: 'bot',
               content: errorMessage,
-              alert: true,
-              isGenerating: false
-            };
-          }
-          return updatedConversation;
+              alert: true
+            }
+          ];
         });
         
         setIsGenerating(false);
@@ -273,20 +289,15 @@ const GPT: React.FC<GPTProps> = ({ sessionToken, setSessionToken }) => {
         content: t('failed_to_fetch_data'),
         alert: true
       };
-      setConversation((prev: any) => [...prev, errorMessage]);
+      
+      setConversation((prev: any) => {
+        const updatedConversation = [...prev];
+        updatedConversation.pop();
+        return [...updatedConversation, errorMessage];
+      });
       setIsGenerating(false);
     }
   };
-  
-  useEffect(() => {
-    const scrollTimeout = setTimeout(() => {
-      if (conversationEndRef.current) {
-        conversationEndRef.current.scrollIntoView({ behavior: 'smooth' });
-      }
-    }, 10);
-
-    return () => clearTimeout(scrollTimeout);
-  }, [conversation]);
 
   return (
     <>

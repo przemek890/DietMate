@@ -11,15 +11,3 @@ errorlog = "-"
 loglevel = "info"
 
 wsgi_app = "app:app"
-
-def on_starting(server):
-    """Code executed once when Gunicorn master starts."""
-    print("Gunicorn master starting...")
-    load_dotenv()
-    SECRET_KEY = os.getenv('SECRET_KEY')
-    if not SECRET_KEY:
-        SECRET_KEY = secrets.token_hex(32)
-        with open('.env', 'a') as f:
-            f.write(f'\nSECRET_KEY={SECRET_KEY}')
-
-on_starting = on_starting
