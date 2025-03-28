@@ -10,18 +10,8 @@ import GPT from "./Components/GPT/GPT";
 import './i18n';
 
 const App = () => {
-    const [darkMode, setDarkMode] = useState<boolean>(false);
     const [anchorElLanguage, setAnchorElLanguage] = useState<null | HTMLElement>(null);
     const { i18n, t } = useTranslation();
-
-
-    const handleThemeChange = (isDark: boolean): void => {
-        setDarkMode(isDark);
-    };
-
-    const handleLanguageChange = (lang: string): void => {
-        i18n.changeLanguage(lang);
-    };
 
     // Notice:
     // Using localStorage would be incorrect as different browser tabs would share the same data because the token is issued per browser, not per session
@@ -56,22 +46,13 @@ const App = () => {
 
       }, []);
 
-    const theme = createTheme({
+      const theme = createTheme({
         palette: {
-            primary: {
-                main: darkMode ? '#ffffff' : '#000000',
-            },
-            mode: darkMode ? 'dark' : 'light',
-            background: {
-                default: darkMode ? '#1f1f23' : '#eaeaea',
-            },
+          primary: {
+            main: '#000000',
+          },
         },
-    });
-
-    const handleDarkModeToggle = (): void => {
-        setDarkMode(!darkMode);
-    };
-
+      });
     const handleLanguageClick = (event: MouseEvent<HTMLElement>): void => {
         setAnchorElLanguage(event.currentTarget);
     };
