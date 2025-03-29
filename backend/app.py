@@ -13,7 +13,7 @@ app = app_config.app
 redis_client = app_config.r
 collection1 = app_config.collection1
 
-########################################### ENDPOINTS ###########################################
+########################################### SESSION ENDPOINTS ###########################################
 
 @app.route('/api/session', methods=['GET'])
 def manage_session():
@@ -36,6 +36,7 @@ def manage_session():
         "token": token
     }), 200
 
+########################################### GPT ENDPOINTS ###########################################
 @app.route('/api/askGPT', methods=['POST'])
 @require_valid_token
 def ask_gpt_endpoint(session_id: str) -> Response:
@@ -83,6 +84,9 @@ def ask_gpt_endpoint(session_id: str) -> Response:
         return response
     except Exception as e:
         return Response(f"***ERROR***: {e}", status=500)
+    
+
+########################################### REDIS ENDPOINTS ###########################################
     
 @app.route('/api/redis/list', methods=['GET'])
 @require_valid_token
@@ -151,7 +155,86 @@ def add_to_set(session_id: str):
         }), 200
     except Exception as e:
         return jsonify({"error": f"Failed to add value to set: {str(e)}"}), 500
+    
 
+@app.route('/api/redis/update', methods=['PUT'])
+@require_valid_token
+def update_in_set(session_id: str):
+    """
+    Protected endpoint to update a value in a given Redis set.
+
+    Args:
+        session_id: Automatically injected by the decorator after token verification.
+        set_name: Query parameter defining the Redis set to update.
+        old_value: JSON body parameter defining the value to be replaced.
+        new_value: JSON body parameter defining the new value.
+
+    Returns:
+        JSON response indicating success or failure.
+    """
+    try:
+        set_name = request.args.get("set_name")
+        data = request.json or {}
+        old_value = data.get("old_value")
+        new_value = data.get("new_value")
+
+        if not set_name:
+            return jsonify({"error": "set_name query parameter is required"}), 400
+        if not old_value or not new_value:
+            return jsonify({"error": "Both old_value and new_value are required in the request body"}), 400
+
+        old_entry = f"{session_id}:{old_value}"
+        new_entry = f"{session_id}:{new_value}"
+
+        if redis_client.sismember(set_name, old_entry):
+            redis_client.srem(set_name, old_entry)
+            redis_client.sadd(set_name, new_entry)
+            return jsonify({
+                "message": f"Value '{old_value}' updated to '{new_value}' in set '{set_name}'"
+            }), 200
+        else:
+            return jsonify({"error": f"Old value '{old_value}' not found in set '{set_name}'"}), 404
+    except Exception as e:
+        return jsonify({"error": f"Failed to update value in set: {str(e)}"}), 500
+
+@app.route('/api/redis/delete', methods=['DELETE'])
+@require_valid_token
+def delete_from_set(session_id: str):
+    """
+    Protected endpoint to delete a value from a given Redis set.
+
+    Args:
+        session_id: Automatically injected by the decorator after token verification.
+        set_name: Query parameter defining the Redis set to delete the value from.
+        value: JSON body parameter defining the value to delete.
+
+    Returns:
+        JSON response indicating success or failure.
+    """
+    try:
+        set_name = request.args.get("set_name")
+        data = request.json or {}
+        value = data.get("value")
+
+        if not set_name:
+            return jsonify({"error": "set_name query parameter is required"}), 400
+        if not value:
+            return jsonify({"error": "Value is required in the request body"}), 400
+
+        entry = f"{session_id}:{value}"
+
+        if redis_client.sismember(set_name, entry):
+            redis_client.srem(set_name, entry)
+            return jsonify({
+                "message": f"Value '{value}' deleted from set '{set_name}'"
+            }), 200
+        else:
+            return jsonify({"error": f"Value '{value}' not found in set '{set_name}'"}), 404
+    except Exception as e:
+        return jsonify({"error": f"Failed to delete value from set: {str(e)}"}), 500
+
+
+########################################### OTHER ENDPOINTS ###########################################
 
 @app.route("/")
 def home():
