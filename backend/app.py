@@ -13,8 +13,8 @@ app = app_config.app
 redis_client = app_config.r
 collection1 = app_config.collection1
 
+########################################### ENDPOINTS ###########################################
 
-############################################################################################################
 @app.route('/api/session', methods=['GET'])
 def manage_session():
     """
@@ -83,6 +83,75 @@ def ask_gpt_endpoint(session_id: str) -> Response:
         return response
     except Exception as e:
         return Response(f"***ERROR***: {e}", status=500)
+    
+@app.route('/api/redis/list', methods=['GET'])
+@require_valid_token
+def get_values_from_set(session_id: str):
+    """
+    Protected endpoint to get all values from a given Redis set for a specific session_id.
+
+    Args:
+        session_id: Automatically injected by the decorator after token verification.
+        set_name: Query parameter defining the Redis set to retrieve.
+
+    Returns:
+        JSON response with the list of values associated with the session_id.
+    """
+    try:
+        set_name = request.args.get("set_name")
+
+        if not set_name:
+            return jsonify({"error": "set_name query parameter is required"}), 400
+
+        set_values = redis_client.smembers(set_name)
+
+        user_values = [
+            value.decode("utf-8").split(":", 1)[1]
+            for value in set_values
+            if value.decode("utf-8").startswith(f"{session_id}:")
+        ]
+
+        return jsonify({
+            "set_name": set_name,
+            "values": user_values
+        }), 200
+    except Exception as e:
+        return jsonify({"error": f"Failed to fetch values from set: {str(e)}"}), 500
+
+
+@app.route('/api/redis/add', methods=['POST'])
+@require_valid_token
+def add_to_set(session_id: str):
+    """
+    Protected endpoint to add a value to a given Redis set.
+
+    Args:
+        session_id: Automatically injected by the decorator after token verification.
+        set_name: Query parameter defining the Redis set to update.
+        value: JSON body parameter defining the value to add.
+
+    Returns:
+        JSON response indicating success or failure.
+    """
+    try:
+        set_name = request.args.get("set_name")
+        data = request.json or {}
+        value = data.get("value")
+        if not set_name:
+            return jsonify({"error": "set_name query parameter is required"}), 400
+        if not value:
+            return jsonify({"error": "Value is required in the request body"}), 400
+
+        entry = f"{session_id}:{value}"
+
+        redis_client.sadd(set_name, entry)
+
+        return jsonify({
+            "message": f"Value '{value}' added to set '{set_name}'"
+        }), 200
+    except Exception as e:
+        return jsonify({"error": f"Failed to add value to set: {str(e)}"}), 500
+
 
 @app.route("/")
 def home():
